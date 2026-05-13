@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.config import (
     PDF_DIR,
-    configure_llama_index,
+    configure_embeddings_only,
     get_chroma_collection,
 )
 
@@ -26,7 +26,7 @@ def ingest() -> None:
     from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
-    configure_llama_index()
+    configure_embeddings_only()
 
     if not PDF_DIR.exists() or not any(PDF_DIR.glob("*.pdf")):
         raise FileNotFoundError(

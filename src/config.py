@@ -1,4 +1,11 @@
-"""Shared config: paths, model names, and LlamaIndex Settings wiring."""
+"""Shared config: paths, model names, and LlamaIndex Settings wiring.
+
+Design choice: embeddings are computed locally via a small sentence-transformers
+model (BAAI/bge-small-en-v1.5, 384-dim, ~130MB). That means anyone can clone
+this repo and run `python -m src.ingest` without any API key. Generation uses
+Claude Sonnet 4.6 via the Anthropic API — but only at query time, so the
+expensive part (indexing the corpus) is free.
+"""
 
 from __future__ import annotations
 
@@ -19,26 +26,41 @@ CHUNK_OVERLAP = 64
 TOP_K = 5
 
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
 
-def configure_llama_index() -> None:
-    """Wire global LlamaIndex Settings. Called once before ingest or query."""
+def configure_embeddings_only() -> None:
+    """Wire local embeddings + chunker. No API key required.
+
+    Used by the ingest pipeline so the corpus can be indexed for free.
+    """
     from llama_index.core import Settings
     from llama_index.core.node_parser import SentenceSplitter
-    from llama_index.embeddings.openai import OpenAIEmbedding
-    from llama_index.llms.anthropic import Anthropic
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise RuntimeError("ANTHROPIC_API_KEY not set. Copy .env.example to .env and fill it in.")
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY not set. Required for OpenAI embeddings.")
-
-    Settings.llm = Anthropic(model=ANTHROPIC_MODEL)
-    Settings.embed_model = OpenAIEmbedding(model=EMBEDDING_MODEL)
+    Settings.embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
     Settings.node_parser = SentenceSplitter(
         chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
     )
+
+
+def configure_llama_index() -> None:
+    """Wire embeddings + Claude generation. Anthropic key required.
+
+    Used by the query pipeline. Embeddings stay local; only the answer
+    generation hits the API, so cost scales with how many questions you ask.
+    """
+    from llama_index.core import Settings
+    from llama_index.llms.anthropic import Anthropic
+
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY not set. Add it to .env in the project root. "
+            "Indexing works without it, but answering questions needs the key."
+        )
+
+    configure_embeddings_only()
+    Settings.llm = Anthropic(model=ANTHROPIC_MODEL)
 
 
 def get_chroma_collection():
