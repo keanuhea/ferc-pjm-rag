@@ -4,6 +4,8 @@ A retrieval-augmented generation pipeline over the regulatory and operator docum
 
 Companion to [`interconnection-queue-analysis`](https://github.com/keanuhea/interconnection-queue-analysis) — the structured-data simulation side of the same problem. Together: two angles on the fragmented-data problem Tapestry (Alphabet) is solving for grid operators.
 
+> **Looking for the combined experience?** This dashboard and its operator-simulator companion are stitched into one front door at [`interconnection-tools`](https://github.com/keanuhea/interconnection-tools) — single cover page, two navigable dashboards. This repo is the RAG corpus standalone; keep it as the decomposed view if you want to inspect just this half.
+
 ## Why this exists
 
 The interconnection process is governed by documents — FERC Order 2023, the rehearing order, PJM's tariff manuals, individual cluster study reports — that live as un-queryable PDFs scattered across regulatory and operator sites. A planner who wants to know "how does Order 2023-A change cost allocation in clusters?" reads through hundreds of pages. This dashboard is a small demo of what changes when you put a retrieval-augmented model on top of that corpus.
